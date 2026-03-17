@@ -3,145 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SollAgro | Gestão Inteligente</title>
+    <title>SollAgro | Solluz Systems</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --verde-agro: #4CAF50; /* O verde da sua logo */
-            --marrom-folha: #5D4037;
-            --bg-dark: #1a1a1a;
-        }
-        body { background-color: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .sidebar { background: var(--bg-dark); min-height: 100vh; color: white; }
-        .sidebar .nav-link { color: #ccc; border-radius: 5px; margin: 5px 0; }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: var(--verde-agro); color: white; }
-        .logo-area { padding: 20px; text-align: center; border-bottom: 1px solid #333; }
-        .card-agro { border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: 0.3s; }
-        .card-agro:hover { transform: translateY(-5px); }
-        .icon-circle { width: 50px; height: 50px; background: rgba(76, 175, 80, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--verde-agro); font-size: 1.5rem; }
-        .status-clima { background: linear-gradient(135deg, #2e7d32, #4caf50); color: white; border-radius: 15px; padding: 20px; }
+        :root { --agro-green: #4CAF50; --solluz-dark: #1a1a1a; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        .sidebar { background: var(--solluz-dark); min-height: 100vh; color: white; position: fixed; width: 250px; }
+        .main-content { margin-left: 250px; padding: 20px; width: calc(100% - 250px); }
+        .nav-link { color: #adb5bd; margin: 10px 15px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .nav-link:hover, .nav-link.active { background: var(--agro-green); color: white !important; }
+        .card-stat { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .section-page { display: none; }
+        .section-page.active { display: block; }
+        .btn-agro { background: var(--agro-green); color: white; border: none; padding: 10px 20px; border-radius: 8px; }
     </style>
 </head>
 <body>
 
-<div class="container-fluid">
-    <div class="row">
-        <nav class="col-md-2 d-none d-md-block sidebar shadow">
-            <div class="logo-area">
-                <h4 class="text-white">Soll<strong>Agro</strong></h4>
-                <small class="text-muted">by Solluz Systems</small>
-            </div>
-            <div class="p-3">
-                <ul class="nav flex-column">
-                    <li class="nav-item"><a href="#" class="nav-link active"><i class="fas fa-home me-2"></i> Dashboard</a></li>
-                    <li class="nav-item"><a href="#" onclick="abrirModulo('maquinas')" class="nav-link"><i class="fas fa-tractor me-2"></i> Maquinário</a></li>
-                    <li class="nav-item"><a href="#" onclick="abrirModulo('estoque')" class="nav-link"><i class="fas fa-seedling me-2"></i> Insumos</a></li>
-                    <li class="nav-item"><a href="#" onclick="abrirModulo('vendas')" class="nav-link"><i class="fas fa-chart-line me-2"></i> Vendas</a></li>
-                    <li class="nav-item"><a href="#" class="nav-link"><i class="fas fa-cloud-sun me-2"></i> Clima</a></li>
-                </ul>
-            </div>
-        </nav>
+<nav class="sidebar shadow">
+    <div class="text-center py-4">
+        <h3 class="text-white">Soll<strong>Agro</strong></h3>
+        <small class="text-success">Gestão para Agronegócio</small>
+    </div>
+    <ul class="nav flex-column">
+        <li class="nav-link active" onclick="navegar('dashboard')"><i class="fas fa-chart-pie me-2"></i> Dashboard</li>
+        <li class="nav-link" onclick="navegar('maquinas')"><i class="fas fa-tractor me-2"></i> Maquinário</li>
+        <li class="nav-link" onclick="navegar('estoque')"><i class="fas fa-box-open me-2"></i> Fertilizantes</li>
+    </ul>
+</nav>
 
-        <main class="col-md-10 ms-sm-auto px-md-4 py-4">
-            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h2">Painel Geral</h1>
-                <div class="btn-toolbar mb-2 mb-md-0">
-                    <button class="btn btn-outline-success" onclick="sincronizarSupabase()">
-                        <i class="fas fa-sync-alt"></i> Sincronizar
-                    </button>
-                </div>
-            </div>
+<div class="main-content">
+    
+    <section id="dashboard" class="section-page active">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Dashboard Geral</h2>
+            <button class="btn-agro" onclick="fetchData()"><i class="fas fa-sync"></i> Atualizar</button>
+        </div>
+        <div class="row g-4 mb-4">
+            <div class="col-md-4"><div class="card card-stat p-4 text-center"><h5>Área Total</h5><h3>150 ha</h3></div></div>
+            <div class="col-md-4"><div class="card card-stat p-4 text-center"><h5>Maquinas Ativas</h5><h3 id="dash-maquinas">--</h3></div></div>
+            <div class="col-md-4"><div class="card card-stat p-4 bg-success text-white"><h5>Clima</h5><h3>31°C - Ensolarado</h3></div></div>
+        </div>
+        <div class="card card-stat p-4">
+            <h5>Últimas Operações</h5>
+            <table class="table"><tbody id="table-body-dash"></tbody></table>
+        </div>
+    </section>
 
-            <div class="row g-4 mb-4">
-                <div class="col-md-3">
-                    <div class="card card-agro p-3">
-                        <div class="d-flex align-items-center">
-                            <div class="icon-circle me-3"><i class="fas fa-oil-can"></i></div>
-                            <div>
-                                <h6 class="text-muted mb-0">Manutenção</h6>
-                                <h4 class="mb-0" id="count-maquinas">02</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card card-agro p-3">
-                        <div class="d-flex align-items-center">
-                            <div class="icon-circle me-3" style="color: #ff9800; background: rgba(255,152,0,0.1);"><i class="fas fa-warehouse"></i></div>
-                            <div>
-                                <h6 class="text-muted mb-0">Estoque Baixo</h6>
-                                <h4 class="mb-0" id="count-estoque">05</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="status-clima d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5>Fazenda Principal</h5>
-                            <p class="mb-0"><i class="fas fa-cloud-rain"></i> Previsão: 12mm amanhã</p>
-                        </div>
-                        <h2 class="mb-0">28°C</h2>
-                    </div>
-                </div>
-            </div>
+    <section id="maquinas" class="section-page">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Gestão de Maquinário</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalMaquina">+ Nova Máquina</button>
+        </div>
+        <div class="card card-stat p-4">
+            <table class="table table-hover">
+                <thead><tr><th>Máquina</th><th>Tipo</th><th>Horímetro</th><th>Manutenção</th></tr></thead>
+                <tbody id="table-body-maquinas"></tbody>
+            </table>
+        </div>
+    </section>
 
-            <div class="card card-agro">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0">Últimas Operações de Campo</h5>
-                </div>
-                <div class="table-responsive p-3">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Data</th>
-                                <th>Talhão</th>
-                                <th>Operação</th>
-                                <th>Insumo</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabela-operacoes">
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">Buscando dados no servidor...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+</div>
+
+<div class="modal fade" id="modalMaquina" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Cadastrar Máquina</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="formMaquina">
+                    <input type="text" id="m_nome" class="form-control mb-2" placeholder="Nome (Ex: Trator JD)" required>
+                    <select id="m_tipo" class="form-control mb-2"><option>Trator</option><option>Colheitadeira</option></select>
+                    <input type="number" id="m_horimetro" class="form-control mb-2" placeholder="Horímetro Atual">
+                    <button type="button" class="btn btn-success w-100" onclick="salvarMaquina()">Gravar no Supabase</button>
+                </form>
             </div>
-        </main>
+        </div>
     </div>
 </div>
 
-<script>
-    // Função para chamar o Back-end (Apps Script)
-    function sincronizarSupabase() {
-        google.script.run
-            .withSuccessHandler(function(dados) {
-                renderizarTabela(dados);
-            })
-            .withFailureHandler(function(err) {
-                alert("Erro ao conectar: " + err);
-            })
-            .buscarDadosSupabase('operacoes_campo');
-    }
-
-    function renderizarTabela(dados) {
-        const tbody = document.getElementById('tabela-operacoes');
-        tbody.innerHTML = dados.map(item => `
-            <tr>
-                <td>${new Date(item.created_at).toLocaleDateString()}</td>
-                <td>${item.nome_talhao || 'N/A'}</td>
-                <td>Aplicação</td>
-                <td>${item.nome_insumo || 'Padrão'}</td>
-                <td><span class="badge bg-success">Concluído</span></td>
-            </tr>
-        `).join('');
-    }
-
-    // Inicialização
-    window.onload = sincronizarSupabase;
-</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
