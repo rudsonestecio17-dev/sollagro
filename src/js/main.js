@@ -1,37 +1,60 @@
 const SB_URL = "https://mcahoawxselcrbfjhivd.supabase.co";
 const SB_KEY = "sb_publishable_ihiNA8eqGLo0ouIeHMXEpQ_fjgQbhSP";
 
-// Função para buscar dados do Supabase (Substitui o Apps Script)
-async function buscarDados(tabela) {
-    const response = await fetch(`${SB_URL}/rest/v1/${tabela}?select=*`, {
-        headers: {
-            "apikey": SB_KEY,
-            "Authorization": `Bearer ${SB_KEY}`
-        }
-    });
-    const dados = await response.json();
-    return dados;
+// Navegação entre seções
+function navegar(id) {
+    document.querySelectorAll('.section-page').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    
+    document.getElementById(id).classList.add('active');
+    event.currentTarget.classList.add('active');
+
+    if(id === 'maquinas') carregarMaquinas();
 }
 
-// Função para renderizar no Dashboard
-async function inicializarDashboard() {
-    const operacoes = await buscarDados('operacoes_campo');
-    const tbody = document.getElementById('tabela-operacoes');
-    
-    if (operacoes.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nenhuma operação registrada.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = operacoes.map(item => `
+// Buscar Máquinas do Supabase
+async function carregarMaquinas() {
+    const res = await fetch(`${URL_SB}/rest/v1/maquinario?select=*`, {
+        headers: { "apikey": KEY_SB, "Authorization": `Bearer ${KEY_SB}` }
+    });
+    const dados = await res.json();
+    const tbody = document.getElementById('table-body-maquinas');
+    tbody.innerHTML = dados.map(m => `
         <tr>
-            <td>${new Date(item.data_operacao).toLocaleDateString()}</td>
-            <td>Talhão ${item.talhao_id.slice(0,5)}...</td>
-            <td>Operação</td>
-            <td>${item.quantidade_insumo_usada} un.</td>
-            <td><span class="badge bg-success">Ativo</span></td>
+            <td>${m.nome_maquina}</td>
+            <td>${m.tipo}</td>
+            <td>${m.horimetro_atual} h</td>
+            <td>${m.proxima_manutencao || 'N/A'}</td>
         </tr>
     `).join('');
+    document.getElementById('dash-maquinas').innerText = dados.length;
 }
 
-window.onload = inicializarDashboard;
+// Salvar Nova Máquina
+async function salvarMaquina() {
+    const dados = {
+        nome_maquina: document.getElementById('m_nome').value,
+        tipo: document.getElementById('m_tipo').value,
+        horimetro_atual: document.getElementById('m_horimetro').value
+    };
+
+    const res = await fetch(`${URL_SB}/rest/v1/maquinario`, {
+        method: "POST",
+        headers: { 
+            "apikey": KEY_SB, 
+            "Authorization": `Bearer ${KEY_SB}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+        },
+        body: JSON.stringify(dados)
+    });
+
+    if(res.ok) {
+        alert("Máquina salva com sucesso!");
+        bootstrap.Modal.getInstance(document.getElementById('modalMaquina')).hide();
+        carregarMaquinas();
+    }
+}
+
+// Carregar Dashboard ao iniciar
+window.onload = () => carregarMaquinas();
