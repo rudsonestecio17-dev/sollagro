@@ -8,81 +8,134 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --agro-green: #4CAF50; --solluz-dark: #1a1a1a; }
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
-        .sidebar { background: var(--solluz-dark); min-height: 100vh; color: white; position: fixed; width: 250px; }
-        .main-content { margin-left: 250px; padding: 20px; width: calc(100% - 250px); }
-        .nav-link { color: #adb5bd; margin: 10px 15px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; }
+        
+        /* Sidebar Fixa */
+        .sidebar { background: var(--solluz-dark); width: 250px; min-height: 100vh; color: white; position: fixed; z-index: 100; }
+        .main-content { margin-left: 250px; flex: 1; padding: 30px; }
+        
+        .nav-link { color: #adb5bd; padding: 12px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s; margin: 5px 10px; display: block; text-decoration: none; }
         .nav-link:hover, .nav-link.active { background: var(--agro-green); color: white !important; }
-        .card-stat { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        
+        .card-stat { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white; }
         .section-page { display: none; }
         .section-page.active { display: block; }
-        .btn-agro { background: var(--agro-green); color: white; border: none; padding: 10px 20px; border-radius: 8px; }
+        
+        .btn-agro { background: var(--agro-green); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <nav class="sidebar shadow">
-    <div class="text-center py-4">
-        <h3 class="text-white">Soll<strong>Agro</strong></h3>
-        <small class="text-success">Gestão para Agronegócio</small>
+    <div class="text-center py-4 border-bottom border-secondary mb-3">
+        <h3 class="text-white mb-0">Soll<strong>Agro</strong></h3>
+        <small class="text-success">GESTÃO OPERACIONAL</small>
     </div>
-    <ul class="nav flex-column">
-        <li class="nav-link active" onclick="navegar('dashboard')"><i class="fas fa-chart-pie me-2"></i> Dashboard</li>
-        <li class="nav-link" onclick="navegar('maquinas')"><i class="fas fa-tractor me-2"></i> Maquinário</li>
-        <li class="nav-link" onclick="navegar('estoque')"><i class="fas fa-box-open me-2"></i> Fertilizantes</li>
-    </ul>
+    <div class="nav flex-column">
+        <div class="nav-link active" onclick="navegar('dashboard', this)"><i class="fas fa-chart-pie me-2"></i> Dashboard</div>
+        <div class="nav-link" onclick="navegar('maquinas', this)"><i class="fas fa-tractor me-2"></i> Maquinário</div>
+        <div class="nav-link" onclick="navegar('estoque', this)"><i class="fas fa-seedling me-2"></i> Fertilizantes</div>
+        <div class="nav-link" onclick="navegar('vendas', this)"><i class="fas fa-dollar-sign me-2"></i> Vendas</div>
+    </div>
 </nav>
 
 <div class="main-content">
     
     <section id="dashboard" class="section-page active">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Dashboard Geral</h2>
-            <button class="btn-agro" onclick="fetchData()"><i class="fas fa-sync"></i> Atualizar</button>
+            <h2>Painel Geral</h2>
+            <button class="btn-agro" onclick="carregarDadosGerais()"><i class="fas fa-sync-alt"></i> Atualizar Dados</button>
         </div>
+        
         <div class="row g-4 mb-4">
-            <div class="col-md-4"><div class="card card-stat p-4 text-center"><h5>Área Total</h5><h3>150 ha</h3></div></div>
-            <div class="col-md-4"><div class="card card-stat p-4 text-center"><h5>Maquinas Ativas</h5><h3 id="dash-maquinas">--</h3></div></div>
-            <div class="col-md-4"><div class="card card-stat p-4 bg-success text-white"><h5>Clima</h5><h3>31°C - Ensolarado</h3></div></div>
+            <div class="col-md-3"><div class="card card-stat p-4"><h6>Manutenção</h6><h2 id="dash-maint">0</h2></div></div>
+            <div class="col-md-3"><div class="card card-stat p-4"><h6>Estoque Insumos</h6><h2 id="dash-stock">0</h2></div></div>
+            <div class="col-md-6">
+                <div class="card card-stat p-4 bg-success text-white">
+                    <div class="d-flex justify-content-between">
+                        <div><h6>Clima - Limeira/SP</h6><h4>Ensolarado</h4></div>
+                        <h1 class="mb-0">31°C</h1>
+                    </div>
+                </div>
+            </div>
         </div>
+
         <div class="card card-stat p-4">
-            <h5>Últimas Operações</h5>
-            <table class="table"><tbody id="table-body-dash"></tbody></table>
+            <h5>Atividades Recentes</h5>
+            <div class="table-responsive">
+                <table class="table"><tbody id="table-recentes"></tbody></table>
+            </div>
         </div>
     </section>
 
     <section id="maquinas" class="section-page">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Gestão de Maquinário</h2>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalMaquina">+ Nova Máquina</button>
+            <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modalNovo">+ Adicionar Máquina</button>
         </div>
         <div class="card card-stat p-4">
             <table class="table table-hover">
-                <thead><tr><th>Máquina</th><th>Tipo</th><th>Horímetro</th><th>Manutenção</th></tr></thead>
-                <tbody id="table-body-maquinas"></tbody>
+                <thead><tr><th>Máquina</th><th>Tipo</th><th>Horímetro</th><th>Status</th></tr></thead>
+                <tbody id="table-maquinas-full"></tbody>
             </table>
         </div>
     </section>
 
 </div>
 
-<div class="modal fade" id="modalMaquina" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header"><h5>Cadastrar Máquina</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-            <div class="modal-body">
-                <form id="formMaquina">
-                    <input type="text" id="m_nome" class="form-control mb-2" placeholder="Nome (Ex: Trator JD)" required>
-                    <select id="m_tipo" class="form-control mb-2"><option>Trator</option><option>Colheitadeira</option></select>
-                    <input type="number" id="m_horimetro" class="form-control mb-2" placeholder="Horímetro Atual">
-                    <button type="button" class="btn btn-success w-100" onclick="salvarMaquina()">Gravar no Supabase</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="js/main.js"></script>
+<script>
+    const SB_URL = "https://mcahoawxselcrbfjhivd.supabase.co";
+const SB_KEY = "sb_publishable_ihiNA8eqGLo0ouIeHMXEpQ_fjgQbhSP";
+
+    // Função de Navegação (Corrige o erro de abrirModulo)
+    function navegar(id, elemento) {
+        document.querySelectorAll('.section-page').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        
+        document.getElementById(id).classList.add('active');
+        elemento.classList.add('active');
+
+        if(id === 'maquinas') carregarMaquinas();
+    }
+
+    // Buscar do Supabase (Substitui o google.script.run)
+    async function carregarDadosGerais() {
+        try {
+            const res = await fetch(`${SB_URL}/rest/v1/maquinario?select=*`, {
+                headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` }
+            });
+            const dados = await res.json();
+            document.getElementById('dash-maint').innerText = dados.length;
+            
+            const tbody = document.getElementById('table-recentes');
+            tbody.innerHTML = dados.slice(0, 5).map(m => `
+                <tr>
+                    <td><i class="fas fa-check-circle text-success"></i></td>
+                    <td>Check-up: ${m.nome_maquina}</td>
+                    <td>${new Date().toLocaleDateString()}</td>
+                </tr>
+            `).join('');
+        } catch (e) { console.error("Erro Supabase:", e); }
+    }
+
+    async function carregarMaquinas() {
+        const res = await fetch(`${SB_URL}/rest/v1/maquinario?select=*`, {
+            headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` }
+        });
+        const dados = await res.json();
+        const tbody = document.getElementById('table-maquinas-full');
+        tbody.innerHTML = dados.map(m => `
+            <tr>
+                <td><strong>${m.nome_maquina}</strong></td>
+                <td>${m.tipo}</td>
+                <td>${m.horimetro_atual} h</td>
+                <td><span class="badge bg-success">Operacional</span></td>
+            </tr>
+        `).join('');
+    }
+
+    window.onload = carregarDadosGerais;
+</script>
 </body>
 </html>
