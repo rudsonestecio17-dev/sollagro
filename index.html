@@ -18,6 +18,7 @@
         .section-page.active { display: block; }
         .btn-agro { background: var(--agro-green); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; transition: 0.3s; }
         .btn-agro:hover { background: #3d8b40; }
+        .weather-card { background: linear-gradient(135deg, #2e7d32, #4caf50); color: white; border: none; border-radius: 15px; }
     </style>
 </head>
 <body>
@@ -40,15 +41,35 @@
     <section id="dashboard" class="section-page active">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Painel Geral</h2>
-            <button class="btn-agro" onclick="carregarDadosGerais()"><i class="fas fa-sync-alt"></i> Sincronizar</button>
+            <button class="btn-agro" onclick="sincronizarTudo()"><i class="fas fa-sync-alt"></i> Sincronizar</button>
         </div>
+        
         <div class="row g-4 mb-4">
-            <div class="col-md-3"><div class="card card-stat p-4"><h6>Máquinas Cadastradas</h6><h2 id="dash-maint">0</h2></div></div>
-            <div class="col-md-3"><div class="card card-stat p-4"><h6>Preço Soja (Saca)</h6><h2 id="dash-vendas">R$ 135,00</h2></div></div>
-            <div class="col-md-6"><div class="card card-stat p-4 bg-success text-white"><h6>Clima - Limeira/SP</h6><h4>Ensolarado</h4><h1>31°C</h1></div></div>
+            <div class="col-md-7">
+                <div class="card weather-card p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 id="txt-cidade">Limeira, BR</h5>
+                            <div class="input-group input-group-sm mb-3" style="max-width: 200px;">
+                                <input type="text" id="busca-cidade" class="form-control" placeholder="Mudar cidade...">
+                                <button class="btn btn-dark" onclick="buscarClima()"><i class="fas fa-search"></i></button>
+                            </div>
+                            <h2 id="txt-desc">Ensolarado</h2>
+                        </div>
+                        <h1 class="display-2 mb-0" id="txt-temp">--°C</h1>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="card card-stat p-4 h-100">
+                    <h6>Máquinas Ativas</h6>
+                    <h2 id="dash-maint" class="display-4 text-success">0</h2>
+                </div>
+            </div>
         </div>
+
         <div class="card card-stat p-4">
-            <h5>Atividades do Sistema</h5>
+            <h5>Atividades Sincronizadas</h5>
             <div class="table-responsive"><table class="table"><tbody id="table-recentes"></tbody></table></div>
         </div>
     </section>
@@ -67,25 +88,12 @@
     </section>
 
     <section id="estoque" class="section-page">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Estoque de Insumos</h2>
-        </div>
+        <h2>Controle de Insumos</h2>
         <div class="card card-stat p-4">
             <table class="table table-hover">
-                <thead><tr><th>Insumo</th><th>Quantidade</th><th>Unidade</th><th>Custo Médio</th></tr></thead>
+                <thead><tr><th>Insumo</th><th>Estoque</th><th>Unidade</th><th>Custo Médio</th></tr></thead>
                 <tbody id="table-estoque"></tbody>
             </table>
-        </div>
-    </section>
-
-    <section id="vendas" class="section-page">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Perspectiva Comercial</h2>
-        </div>
-        <div class="card card-stat p-4 text-center">
-            <i class="fas fa-chart-line fa-3x text-success mb-3"></i>
-            <h4>Módulo Comercial em Integração</h4>
-            <p class="text-muted">Aqui o Power BI da Solluz Systems trará os lucros projetados.</p>
         </div>
     </section>
 
@@ -94,12 +102,12 @@
 <div class="modal fade" id="modalNovo" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header"><h5>Nova Máquina</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-header"><h5>Cadastrar Equipamento</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
                 <form id="formAdd">
-                    <input type="text" id="cad_nome" class="form-control mb-3" placeholder="Nome (Ex: Trator JD)" required>
+                    <input type="text" id="cad_nome" class="form-control mb-3" placeholder="Nome (Ex: Trator JD 6125)" required>
                     <input type="text" id="cad_tipo" class="form-control mb-3" placeholder="Tipo (Ex: Trator)">
-                    <input type="number" id="cad_horimetro" class="form-control mb-3" placeholder="Horímetro Inicial">
+                    <input type="number" id="cad_horimetro" class="form-control mb-3" placeholder="Horímetro Atual">
                     <button type="button" class="btn-agro w-100" onclick="salvarNovaMaquina()">Gravar no Supabase</button>
                 </form>
             </div>
@@ -111,20 +119,40 @@
 <script>
     const SB_URL = "https://mcahoawxselcrbfjhivd.supabase.co";
     const SB_KEY = "sb_publishable_ihiNA8eqGLo0ouIeHMXEpQ_fjgQbhSP";
+    const WEATHER_KEY = "288f57e1f115b097a618e030aa1717a7";
 
-    // Navegação entre módulos
+    // Navegação Principal
     function navegar(id, elemento) {
         document.querySelectorAll('.section-page').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        
         document.getElementById(id).classList.add('active');
         elemento.classList.add('active');
-
         if(id === 'maquinas') carregarMaquinas();
         if(id === 'estoque') carregarEstoque();
     }
 
-    // Carregar dados para o Dashboard
+    // Lógica do Clima Inteligente
+    async function buscarClima() {
+        let cidade = document.getElementById('busca-cidade').value || 'Limeira';
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${cidade}&appid=${WEATHER_KEY}&units=metric&lang=pt_br`;
+        
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if(data.cod === 200) {
+                document.getElementById('txt-cidade').innerText = `${data.name}, ${data.sys.country}`;
+                document.getElementById('txt-temp').innerText = `${Math.round(data.main.temp)}°C`;
+                document.getElementById('txt-desc').innerText = data.weather[0].description;
+            }
+        } catch (e) { console.error("Erro Clima:", e); }
+    }
+
+    // Integração Supabase
+    async function sincronizarTudo() {
+        carregarDadosGerais();
+        buscarClima();
+    }
+
     async function carregarDadosGerais() {
         try {
             const res = await fetch(`${SB_URL}/rest/v1/maquinario?select=*`, {
@@ -132,76 +160,50 @@
             });
             const dados = await res.json();
             document.getElementById('dash-maint').innerText = dados.length;
-            
-            const tbody = document.getElementById('table-recentes');
-            tbody.innerHTML = dados.slice(0, 5).map(m => `
-                <tr>
-                    <td><i class="fas fa-check-circle text-success"></i></td>
-                    <td>Sincronizado: ${m.nome_maquina}</td>
-                    <td>${new Date().toLocaleDateString()}</td>
-                </tr>
+            document.getElementById('table-recentes').innerHTML = dados.slice(0, 4).map(m => `
+                <tr><td><i class="fas fa-check-circle text-success"></i> Sincronizado: ${m.nome_maquina}</td></tr>
             `).join('');
-        } catch (e) { console.error("Erro:", e); }
+        } catch (e) { console.error(e); }
     }
 
-    // Listar Máquinas
     async function carregarMaquinas() {
         const res = await fetch(`${SB_URL}/rest/v1/maquinario?select=*`, {
             headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` }
         });
         const dados = await res.json();
         document.getElementById('table-maquinas-full').innerHTML = dados.map(m => `
-            <tr>
-                <td><strong>${m.nome_maquina}</strong></td>
-                <td>${m.tipo}</td>
-                <td>${m.horimetro_atual} h</td>
-                <td><span class="badge bg-success">Operacional</span></td>
-            </tr>
+            <tr><td><strong>${m.nome_maquina}</strong></td><td>${m.tipo}</td><td>${m.horimetro_atual}h</td><td><span class="badge bg-success">Ativo</span></td></tr>
         `).join('');
     }
 
-    // Listar Estoque
     async function carregarEstoque() {
         const res = await fetch(`${SB_URL}/rest/v1/insumos?select=*`, {
             headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}` }
         });
         const dados = await res.json();
         document.getElementById('table-estoque').innerHTML = dados.map(i => `
-            <tr>
-                <td>${i.nome}</td>
-                <td>${i.estoque_atual}</td>
-                <td>${i.unidade_medida}</td>
-                <td>R$ ${i.custo_medio_unidade}</td>
-            </tr>
+            <tr><td>${i.nome}</td><td>${i.estoque_atual}</td><td>${i.unidade_medida}</td><td>R$ ${i.custo_medio_unidade}</td></tr>
         `).join('');
     }
 
-    // Salvar Máquina
     async function salvarNovaMaquina() {
         const payload = {
             nome_maquina: document.getElementById('cad_nome').value,
             tipo: document.getElementById('cad_tipo').value,
             horimetro_atual: document.getElementById('cad_horimetro').value
         };
-
         const res = await fetch(`${SB_URL}/rest/v1/maquinario`, {
             method: "POST",
-            headers: { 
-                "apikey": SB_KEY, 
-                "Authorization": `Bearer ${SB_KEY}`,
-                "Content-Type": "application/json"
-            },
+            headers: { "apikey": SB_KEY, "Authorization": `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify(payload)
         });
-
         if(res.ok) {
-            alert("Máquina Salva!");
             bootstrap.Modal.getInstance(document.getElementById('modalNovo')).hide();
             carregarMaquinas();
         }
     }
 
-    window.onload = carregarDadosGerais;
+    window.onload = sincronizarTudo;
 </script>
 </body>
 </html>
