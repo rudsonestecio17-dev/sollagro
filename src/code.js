@@ -1,23 +1,37 @@
 const SB_URL = "https://mcahoawxselcrbfjhivd.supabase.co";
 const SB_KEY = "sb_publishable_ihiNA8eqGLo0ouIeHMXEpQ_fjgQbhSP";
 
-function buscarDadosSupabase(tabela) {
-  const url = `${SB_URL}/rest/v1/${tabela}?select=*`;
-  const options = {
-    "method": "get",
-    "headers": {
-      "apikey": SB_KEY,
-      "Authorization": "Bearer " + SB_KEY
-    }
-  };
-  
-  const response = UrlFetchApp.fetch(url, options);
-  return JSON.parse(response.getContentText());
+// Função para buscar dados do Supabase (Substitui o Apps Script)
+async function buscarDados(tabela) {
+    const response = await fetch(`${SB_URL}/rest/v1/${tabela}?select=*`, {
+        headers: {
+            "apikey": SB_KEY,
+            "Authorization": `Bearer ${SB_KEY}`
+        }
+    });
+    const dados = await response.json();
+    return dados;
 }
 
-function doGet() {
-  return HtmlService.createTemplateFromFile('index')
-      .evaluate()
-      .setTitle('SollAgro')
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+// Função para renderizar no Dashboard
+async function inicializarDashboard() {
+    const operacoes = await buscarDados('operacoes_campo');
+    const tbody = document.getElementById('tabela-operacoes');
+    
+    if (operacoes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Nenhuma operação registrada.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = operacoes.map(item => `
+        <tr>
+            <td>${new Date(item.data_operacao).toLocaleDateString()}</td>
+            <td>Talhão ${item.talhao_id.slice(0,5)}...</td>
+            <td>Operação</td>
+            <td>${item.quantidade_insumo_usada} un.</td>
+            <td><span class="badge bg-success">Ativo</span></td>
+        </tr>
+    `).join('');
 }
+
+window.onload = inicializarDashboard;
